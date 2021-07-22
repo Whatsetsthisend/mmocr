@@ -92,42 +92,39 @@ class TFDecoder(BaseDecoder):
         outputs = self.classifier(attn_output)
         return outputs
 
-    def forward_test(self, feat, out_enc, img_metas):
-        valid_ratios = None
-        if img_metas is not None:
-            valid_ratios = [
-                img_meta.get('valid_ratio', 1.0) for img_meta in img_metas
-            ]
+    def forward_test(self, feat, out_enc, img_meats):
         n, c, h, w = out_enc.size()
         src_mask = None
-        if valid_ratios is not None:
-            src_mask = out_enc.new_zeros((n, h, w))
-            for i, valid_ratio in enumerate(valid_ratios):
-                valid_width = min(w, math.ceil(w * valid_ratio))
-                src_mask[i, :, :valid_width] = 1
-            src_mask = src_mask.view(n, h * w)
+
         out_enc = out_enc.view(n, c, h * w).permute(0, 2, 1)
         out_enc = out_enc.contiguous()
 
-        init_target_seq = torch.full((n, self.max_seq_len + 1),
-                                     self.padding_idx,
-                                     device=out_enc.device,
-                                     dtype=torch.long)
-        # bsz * seq_len
+        init_target_seq = torch.full((n, self.max_seq_len + 1), 92, device=out_enc.device, dtype=torch.long)
         init_target_seq[:, 0] = self.start_idx
-
-        outputs = []
-        for step in range(0, self.max_seq_len):
+        outputs = torch.zeros(0, 92).cuda()
+        for step in range(0, 40):
             decoder_output = self._attention(
                 init_target_seq, out_enc, src_mask=src_mask)
-            # bsz * seq_len * 512
             step_result = F.softmax(
-                self.classifier(decoder_output[:, step, :]), dim=-1)
-            # bsz * num_classes
-            outputs.append(step_result)
+                self.classifier(decoder_output[0][step].unsqueeze(0)), dim=-1)
+            outputs = torch.cat((outputs, step_result), 0)
             _, step_max_index = torch.max(step_result, dim=-1)
-            init_target_seq[:, step + 1] = step_max_index
+            init_target_seq[0][step + 1] = step_max_index
+        outputs = outputs.unsqueeze(0)
+        # outputs = []
+        # for step in range(0, 20):
+        #     decoder_output = self._attention(
+        #         init_target_seq, out_enc, src_mask=src_mask)
+        #     # bsz * seq_len * 512
+        #     step_result = F.softmax(
+        #         self.classifier(decoder_output[:, step, :]), dim=-1)
+        #     # bsz * num_classes
+        #     outputs.append(step_result)
+        #     _, step_max_index = torch.max(step_result, dim=-1)
+        #     init_target_seq[:, step + 1] = step_max_index
+        #
+        # outputs = torch.stack(outputs, dim=1)
 
-        outputs = torch.stack(outputs, dim=1)
-
+        # print(outputs.shape)
+        # print(outputs)
         return outputs

@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import torch
 from mmcv.ops import RoIPool
@@ -129,11 +131,17 @@ def model_inference(model, imgs, batch_mode=False):
             assert not isinstance(
                 m, RoIPool
             ), 'CPU inference with RoIPool is not supported currently.'
-
+    # torch.set_printoptions(threshold=np.inf)
+    print(data)
+    # print(np.transpose(data['img'][0][0].cpu().detach().numpy(), (1, 2, 0)))
     # forward the model
     with torch.no_grad():
-        results = model(return_loss=False, rescale=True, **data)
-
+        # results = model(return_loss=False, rescale=True, **data)
+        results = model(data['img'][0])
+        # print("1", results)
+        # model = torch.jit.load("G:/OCR/mmocr-fork/mmocr/configs/textrecog/nrtr/nrtr_cpu.pt")
+        # results = model(data['img'][0].cpu())
+        # print("2", results)
     if not is_batch:
         return results[0]
     else:

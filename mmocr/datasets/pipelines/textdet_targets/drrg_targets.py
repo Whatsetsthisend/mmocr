@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from lanms import merge_quadrangle_n9 as la_nms
+# from lanms import merge_quadrangle_n9 as la_nms
 from mmdet.core import BitmapMasks
 from mmdet.datasets.builder import PIPELINES
 from numpy.linalg import norm

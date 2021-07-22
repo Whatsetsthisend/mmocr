@@ -25,28 +25,30 @@ def main():
         '--imshow',
         action='store_true',
         help='Whether show image with OpenCV.')
-    args = parser.parse_args()
 
     # build the model from a config file and a checkpoint file
-    model = init_detector(args.config, args.checkpoint, device=args.device)
+    model = init_detector('../configs/textdet/panet/panet_r18_fpem_ffm_600e_icdar2015.py',
+                          '../configs/textdet/panet/panet_r18_fpem_ffm_sbn_600e_icdar2015_20210219-42dbe46a.pth',
+                          device='cuda:0')
+
     if model.cfg.data.test['type'] == 'ConcatDataset':
         model.cfg.data.test.pipeline = model.cfg.data.test['datasets'][
             0].pipeline
-
+    import cv2
+    img = cv2.imread('./images/22.png')
+    out_file = './demo_text_det_pred.jpg'
     # test multiple images
-    results = model_inference(model, args.images, batch_mode=True)
-    print(f'results: {results}')
+    result = model_inference(model, img, batch_mode=True)
+    print(f'results: {result}')
 
-    save_path = Path(args.save_path)
-    for img_path, result in zip(args.images, results):
 
-        out_file = save_path / f'result_{Path(img_path).stem}.png'
+    out_file = './demo_text_det_pred.jpg'
 
-        # show the results
-        img = model.show_result(
-            img_path, result, out_file=str(out_file), show=False)
-        if args.imshow:
-            mmcv.imshow(img, f'predicted results ({img_path})')
+    # show the results
+    img = model.show_result(
+        img, result, out_file=out_file, show=False)
+    if args.imshow:
+        mmcv.imshow(img, f'predicted results ({img})')
 
 
 if __name__ == '__main__':

@@ -119,7 +119,7 @@ class EncodeDecodeRecognizer(BaseRecognizer):
 
         return losses
 
-    def simple_test(self, img, img_metas, **kwargs):
+    def simple_test(self, img, **kwargs):
         """Test function with test time augmentation.
 
         Args:
@@ -133,25 +133,25 @@ class EncodeDecodeRecognizer(BaseRecognizer):
 
         out_enc = None
         if self.encoder is not None:
-            out_enc = self.encoder(feat, img_metas)
+            out_enc = self.encoder(feat)
 
         out_dec = self.decoder(
-            feat, out_enc, None, img_metas, train_mode=False)
+            feat, out_enc, None, train_mode=False)
 
         # early return to avoid post processing
         if torch.onnx.is_in_onnx_export():
             return out_dec
-
+        # print("out_dec", out_dec.shape)
         label_indexes, label_scores = self.label_convertor.tensor2idx(
-            out_dec, img_metas)
+            out_dec)
         label_strings = self.label_convertor.idx2str(label_indexes)
 
         # flatten batch results
         results = []
         for string, score in zip(label_strings, label_scores):
             results.append(dict(text=string, score=score))
-
-        return results
+        print(results)
+        return out_dec
 
     def merge_aug_results(self, aug_results):
         out_text, out_score = '', -1
@@ -164,7 +164,7 @@ class EncodeDecodeRecognizer(BaseRecognizer):
         out_results = [dict(text=out_text, score=out_score)]
         return out_results
 
-    def aug_test(self, imgs, img_metas, **kwargs):
+    def aug_test(self, imgs, **kwargs):
         """Test function as well as time augmentation.
 
         Args:
@@ -174,7 +174,7 @@ class EncodeDecodeRecognizer(BaseRecognizer):
         """
         aug_results = []
         for img, img_meta in zip(imgs, img_metas):
-            result = self.simple_test(img, img_meta, **kwargs)
+            result = self.simple_test(img, **kwargs)
             aug_results.append(result)
 
         return self.merge_aug_results(aug_results)

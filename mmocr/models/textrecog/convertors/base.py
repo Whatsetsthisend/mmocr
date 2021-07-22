@@ -97,6 +97,8 @@ class BaseConvertor:
         assert isinstance(indexes, list)
 
         strings = []
+        # for indexes,i in enumerate(self.idx2char):
+        #     print(i,indexes)
         for index in indexes:
             string = [self.idx2char[i] for i in index]
             strings.append(''.join(string))
